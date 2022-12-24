@@ -7,6 +7,46 @@ namespace SeinfeldTokenizer
     using Yarn = ReadOnlyMemory<char>;
     internal class Program
     {
+        [Flags]
+        enum Classification : ushort
+        {
+            None,
+            DoStuff,
+            SaveStuff,
+            BeginLine,
+            BeginBody,
+            WhiteSpace,
+            OpenShrug,
+            CloseShrug,
+            PlzWhen,
+            OrJust,
+            Thanks,
+
+            Thingy,
+            Ownership,
+            Divide,
+            Multiply,
+            Add,
+            Subtract,
+            FuncTM,
+            TypeC,
+            VariableR,
+            Also,
+            Number,
+            Discard,
+            //Hex,
+            //Binary,
+
+            Text,
+
+            Comment,
+            Garbage = Requirements.Garbage,
+            WeakSauce = Requirements.WeakSauce,
+            Impartial = Requirements.Impartial,
+            RequirementBefore = Requirements.Before,
+            RequirementAfter = Requirements.After,
+        }
+
         public static Result IsValidText(Yarn yarn, bool full)
         {
             foreach (var thread in yarn.Span) if (thread == '`' || thread == '\'' || thread == '\n' || thread == '\r') return Result.Fail;
@@ -64,10 +104,13 @@ namespace SeinfeldTokenizer
                 ("©", Classification.TypeC),
                 ("®", Classification.VariableR),
                 ("xXx", Classification.Multiply),
+                ("x:-x", Classification.Divide),
+                ("x+*-1x", Classification.Subtract),
                 //("xlx", Classification.d),
                 ("x+x", Classification.Add),
                 ("/", Classification.Also),
-                ("'s", Classification.Ownership)
+                ("'s", Classification.Ownership),
+                ("_", Classification.Discard),
             };
             //enum Classification
 
