@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BaseGameLibrary
+namespace SeinfeldTokenizer
 {
     #region Interfaces
 
@@ -87,7 +87,7 @@ namespace BaseGameLibrary
     #region Funcs
     public abstract class ParamFuncBase<T1, TReturn> : IParamFunc<TReturn>, IParamAction<T1>, IParamFunc<T1, TReturn>
     {
-        protected T1 parameter1;
+        public T1 parameter1;
         public TReturn Invoke() => Invoke(parameter1);
         public TReturn Call() => Invoke();
         void IParamAction.Call() => Call();
@@ -109,7 +109,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamFuncBase<T1, T2, TReturn> : ParamFuncBase<T1, TReturn>, IParamAction<T1, T2>, IParamFunc<T1, T2, TReturn>
     {
-        protected T2 parameter2;
+        public T2 parameter2;
 
         protected ParamFuncBase(T1 par1, T2 par2)
             : base(par1)
@@ -126,7 +126,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamFuncBase<T1, T2, T3, TReturn> : ParamFuncBase<T1, T2, TReturn>, IParamAction<T1, T2, T3>, IParamFunc<T1, T2, T3, TReturn>
     {
-        protected T3 parameter3;
+        public T3 parameter3;
 
         protected ParamFuncBase(T1 par1, T2 par2, T3 par3)
             : base(par1, par2)
@@ -144,7 +144,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamFuncBase<T1, T2, T3, T4, TReturn> : ParamFuncBase<T1, T2, T3, TReturn>, IParamAction<T1, T2, T3, T4>, IParamFunc<T1, T2, T3, T4, TReturn>
     {
-        protected T4 parameter4;
+        public T4 parameter4;
 
         protected ParamFuncBase(T1 par1, T2 par2, T3 par3, T4 par4)
             : base(par1, par2, par3)
@@ -161,7 +161,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamFuncBase<T1, T2, T3, T4, T5, TReturn> : ParamFuncBase<T1, T2, T3, T4, TReturn>, IParamAction<T1, T2, T3, T4, T5>, IParamFunc<T1, T2, T3, T4, T5, TReturn>
     {
-        protected T5 parameter5;
+        public T5 parameter5;
 
         protected ParamFuncBase(T1 par1, T2 par2, T3 par3, T4 par4, T5 par5)
             : base(par1, par2, par3, par4)
@@ -177,7 +177,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamFuncBase<T1, T2, T3, T4, T5, T6, TReturn> : ParamFuncBase<T1, T2, T3, T4, T5, TReturn>, IParamAction<T1, T2, T3, T4, T5, T6>, IParamFunc<T1, T2, T3, T4, T5, T6, TReturn>
     {
-        protected T6 parameter6;
+        public T6 parameter6;
 
         protected ParamFuncBase(T1 par1, T2 par2, T3 par3, T4 par4, T5 par5, T6 par6)
             : base(par1, par2, par3, par4, par5)
@@ -270,7 +270,7 @@ namespace BaseGameLibrary
     #region Actions
     public abstract class ParamActionBase<T1> : IParamAction<T1>
     {
-        protected T1 parameter1;
+        public T1 parameter1;
 
         public void Call()
         {
@@ -304,7 +304,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamActionBase<T1, T2> : ParamActionBase<T1>, IParamAction<T1, T2>
     {
-        protected T2 parameter2;        
+        public T2 parameter2;        
 
         protected ParamActionBase(T1 par1, T2 par2)
             : base(par1)
@@ -327,7 +327,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamActionBase<T1, T2, T3> : ParamActionBase<T1, T2>, IParamAction<T1, T2, T3>
     {
-        protected T3 parameter3;
+        public T3 parameter3;
 
         protected ParamActionBase(T1 par1, T2 par2, T3 par3)
             : base(par1, par2)
@@ -351,7 +351,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamActionBase<T1, T2, T3, T4> : ParamActionBase<T1, T2, T3>, IParamAction<T1, T2, T3, T4>
     {
-        protected T4 parameter4;
+        public T4 parameter4;
 
         protected ParamActionBase(T1 par1, T2 par2, T3 par3, T4 par4)
             : base(par1, par2, par3)
@@ -375,7 +375,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamActionBase<T1, T2, T3, T4, T5> : ParamActionBase<T1, T2, T3, T4>, IParamAction<T1, T2, T3, T4, T5>
     {
-        protected T5 parameter5;
+        public T5 parameter5;
 
         protected ParamActionBase(T1 par1, T2 par2, T3 par3, T4 par4, T5 par5)
             : base(par1, par2, par3, par4)
@@ -399,7 +399,7 @@ namespace BaseGameLibrary
 
     public abstract class ParamActionBase<T1, T2, T3, T4, T5, T6> : ParamActionBase<T1, T2, T3, T4, T5>, IParamAction<T1, T2, T3, T4, T5, T6>
     {
-        protected T6 parameter6;
+        public T6 parameter6;
 
         protected ParamActionBase(T1 par1, T2 par2, T3 par3, T4 par4, T5 par5, T6 par6)
             : base(par1, par2, par3, par4, par5)

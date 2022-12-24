@@ -1,28 +1,43 @@
-﻿using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Runtime.CompilerServices;
 
 namespace SeinfeldTokenizer
 {
     using static Extensions;
 
     using Yarn = ReadOnlyMemory<char>;
-    enum Classification
+    enum Result : byte
     {
+        Nuetral,
+        Fail,
+        Success
+    }
+
+    enum Requirements : ushort
+    {
+        Garbage = 8191,
+        WeakSauce = 4096,
+        Impartial = 8192,
+        Before = 16384,
+        After = 32768,
+        Important = Impartial | Before | After,
+        All = Important | WeakSauce
+    }
+
+    [Flags]
+    enum Classification : ushort
+    {
+        None,
         DoStuff,
         SaveStuff,
         BeginLine,
         BeginBody,
         WhiteSpace,
-        OpenQuote,
-        CloseQuote,
         OpenShrug,
         CloseShrug,
         PlzWhen,
         OrJust,
         Thanks,
-        Comment,
-        CommentRegionBegin,
-        CommentRegionEnd,
+
         Thingy,
         Ownership,
         Multiply,
@@ -30,7 +45,20 @@ namespace SeinfeldTokenizer
         FuncTM,
         TypeC,
         VariableR,
-        Also
+        Also,
+        Number,
+
+        //Hex,
+        //Binary,
+
+        Text,
+
+        Comment,
+        Garbage = Requirements.Garbage,
+        WeakSauce = Requirements.WeakSauce,
+        Impartial = Requirements.Impartial,
+        RequirementBefore = Requirements.Before,
+        RequirementAfter = Requirements.After,
     }
 
 
@@ -42,16 +70,19 @@ namespace SeinfeldTokenizer
 
     class Token<TClassification> where TClassification : Enum
     {
-        public Yarn Info { get; }
-        public TClassification Type { get; }
+        //IMemoryOwner, for extra sadness
+        public int StartIndex { get; }
+        public Yarn Info { get; set; }
+        public TClassification Type { get; set; }
 
-        public Token(Yarn info, in TClassification type)
+        public Token(Yarn info, int startIndex, in TClassification type)
         {
+            StartIndex = startIndex;
             Info = info;
             Type = type;
         }
         public Token(in char[] data, in int end, in int length, in TClassification type)
-            : this(new Yarn(data, end - length + 1, length), type) { }
+            : this(new Yarn(data, end - length + 1, length), end - length + 1, type) { }
 
         public override string ToString() => $"Lexim: {Info}, Class: {Type}";
 
@@ -61,7 +92,16 @@ namespace SeinfeldTokenizer
 
     internal class Program
     {
-        public static List<Token<TClassification>> ATM<TClassification>(in char[] input, in (string text, TClassification type)[] expressionClasses, (Func<Yarn, bool, bool> isValid, TClassification specialType)[] specialClassifications) where TClassification : Enum
+        /// <summary>
+        /// What's the deal with that Seinfeld tokenization? *Applause*
+        /// </summary>
+        /// <typeparam name="TClassification">Order in terms of priority (larger number = larger value), match the requirements enum</typeparam>
+        /// <param name="input">the text to tokenize</param>
+        /// <param name="expressionClasses">keywords, symbols and operators</param>
+        /// <param name="specialClassifications">Delegates to detect special lexims, like names and literals</param>
+        /// <returns></returns>
+        /// <exception cref="PuertoRicoException">If your code isn't good, you pulled a Kramer</exception>
+        public static List<Token<TClassification>> ATM<TClassification>(char[] input, (string text, TClassification type)[] expressionClasses, (Func<Yarn, bool, Result> isValid, TClassification specialType)[] specialClassifications, TClassification endPriority /*, Dictionary<Classification, Func<char, bool>> properEnds*/) where TClassification : Enum, IConvertible
         {
             var expressionFunc = GetParamFunc(IsValidExpression, string.Empty, input, 0, 0);
             var specialFunc = GetParamFunc(IsSpecialExpression, specialClassifications[0].isValid, true, Yarn.Empty);
@@ -75,73 +115,197 @@ namespace SeinfeldTokenizer
             possibleResults.CopyTo(0, originalSpecials, 0, originalSpecials.Length);
             int currLength = 0;
 
-
+            int success = -1;
+           // int prevSuccess;
             for (int end = 0; end < input.Length; end++)
             {
-                char curr = input[end];
-                for (int i = 0; i < possibleResults.Count; i++)
+
+                void AddToken(TClassification newType)
                 {
-                    if ()
+                    void Reset()
                     {
-                        possibleResults.RemoveAt(i--);
+                        possibleResults = new List<int>(originalResults);
+                        success = -1;
+                        currLength = 0;
                     }
+                    //var newToken = new Token<TClassification>(input, end, currLength, type);
+
+#nullable disable //cry
+                    TClassification oldType = arcadeMoney.Count > 0 ? arcadeMoney[arcadeMoney.Count - 1].Type : default;
+
+                    if (newType.BetterHasFlag(Requirements.Before))
+                    {
+                        ushort standardNew = newType.Cut(Requirements.Important);
+                        if (newType.BetterHasFlag(Requirements.Impartial) && !oldType.BetterHasFlag(Requirements.After))
+                        {
+                            arcadeMoney.Add(new Token<TClassification>(input, end, currLength, (TClassification)(object)standardNew));
+                            Reset();
+                            return;
+                        }
+                        ushort standardClass = oldType.Cut(Requirements.Important);
+                        
+                        if (!oldType.BetterHasFlag(Requirements.Impartial) ||  standardNew >= standardClass || oldType.BetterHasFlag(Requirements.WeakSauce))
+                        {
+                            if (!newType.BetterHasFlag(Requirements.Impartial) && (!oldType.BetterHasFlag(Requirements.After) || standardClass != standardNew))
+                            {
+                                arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)Requirements.Garbage;
+                                Console.WriteLine("Cannot close region that does not exist!");
+                            }
+                            else arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)((TClassification)(object)standardClass).Cut(Requirements.WeakSauce); //Stan Cry (Tears of joy)
+                        }
+                        //cry
+                        var oldInfo = arcadeMoney[arcadeMoney.Count - 1];
+                        arcadeMoney[arcadeMoney.Count - 1].Info = new Yarn(input, oldInfo.StartIndex, end - oldInfo.StartIndex + 1);
+                    }
+                    //    neededPrev.HasFlag(Classification.RequirementBefore) && !arcadeMoney[arcadeMoney.Count - 1].Type.Equals(neededPrev)) throw new PuertoRicoException($"Failed to complete: End: {end}, Length: {currLength}");
+                    else if (oldType.BetterHasFlag(Requirements.After))
+                    {
+                        //if (oldType.Cut(Requirements.After) != newType.Cut(Requirements.Before)) throw new PuertoRicoException("Missing required info");
+
+                        var oldInfo = arcadeMoney[arcadeMoney.Count - 1];
+                        arcadeMoney[arcadeMoney.Count - 1].Info = new Yarn(input, oldInfo.StartIndex, end - oldInfo.StartIndex + 1);
+                    }
+                    else
+                    {
+                        if (((Requirements)(object)newType).Equals(Requirements.Garbage)) Console.WriteLine("Garbage was added");
+                        arcadeMoney.Add(new Token<TClassification>(input, end, currLength, newType));
+                    }
+
+                    Reset();
+     
+#nullable enable
                 }
 
+                char curr = input[end];
+                expressionFunc.parameter3 = end;
+                expressionFunc.parameter4 = currLength;
+                EliminateNegatives(expressionFunc, possibleResults, expressionClasses, out var newSuccess);
+
+
+                //if (possibleResults.Count == 1 && expressionClasses[possibleResults[0]].text.Length <= currLength)
+                //{
+                //    AddToken(expressionClasses[possibleResults[0]].type);
+                //}
                 currLength++;
-                if (possibleResults.Count == 1 && expressionClasses[possibleResults[0]].text.Length <= currLength)
+                if (possibleResults.Count == 0)
                 {
-                    arcadeMoney.Add(new Token<TClassification>(input, end, currLength, expressionClasses[possibleResults[0]].type));
-                    possibleResults = new List<int>(originalResults);
-                    currLength = 0;
-                }
-                else if (possibleResults.Count == 0)
-                {
-                    possibleResults = new List<int>(originalSpecials);
+                    if (currLength > 1)
+                    { end--; currLength--; }
+                    
                     var tempYarn = new Yarn(input, end - currLength + 1, currLength);
-                    currLength = end - currLength;
-                    bool start = true;
+                    possibleResults = new List<int>(originalSpecials);
 
+                    var origLength = end - currLength;
+                    specialFunc.parameter3 = tempYarn;
+                    specialFunc.parameter2 = true;
+                    EliminateNegatives(specialFunc, possibleResults, specialClassifications, out _);
+                    specialFunc.parameter2 = false;
+                    TClassification foundClass;
                     if (possibleResults.Count > 0)
                     {
                         do
                         {
-                            end++;
-                            tempYarn = new Yarn(input, end, 1);
-                        } while (isValidName(tempYarn));
-                        arcadeMoney.Add(new Token<TClassification>(new Yarn(input, end-- - (currLength = end - currLength), currLength), variableClassification));
-                        possibleResults = new List<int>(originalResults);
-                        currLength = 0;
+                            specialFunc.parameter3 = new Yarn(input, end, 1);
+                            foundClass = specialClassifications[possibleResults[0]].specialType;
+                            EliminateNegatives(specialFunc, possibleResults, specialClassifications, out _);
+
+
+
+                            success = newSuccess;
+                        } while (possibleResults.Count > 0 && ++end < input.Length); //small death here
+
+                        //arcadeMoney.Add(new Token<TClassification>(new Yarn(input, end-- - (currLength = end - currLength), currLength), foundClass));
+                        end--;
+                        currLength = end - origLength;
+                        AddToken(foundClass);
                     }
-                    else throw new PuertoRicoException($"That collection of characters is literally impossible: start: {end - currLength}, end: {end}");
+                    else if (success != -1)
+                    {
+                                               
+                        // arcadeMoney.Add(new Token<TClassification>(new Yarn(input, end-- - currLength + 1, currLength - 1), in expressionClasses[success].type));
+                        AddToken(expressionClasses[success].type);
+                        //Catch keyword containment case
+                        continue;
+                    }
+                    else
+                    {
+                        
+                        //end--;
+                        AddToken((TClassification)(object)Requirements.Garbage);
+                    }
                 }
+                success = newSuccess;// == -1 ? success : newSuccess;
             }
+      
+            var lastType = arcadeMoney[arcadeMoney.Count - 1].Type;
+            if (lastType.BetterHasFlag(Requirements.After) && !lastType.BetterHasFlag(Requirements.WeakSauce) && lastType.CompareTo(endPriority) > 0)
+            {
+                Console.WriteLine($"Cannot finish with opened {arcadeMoney[arcadeMoney.Count - 1].Type.Cut(Requirements.After)}");
+                arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)Requirements.Garbage;
+            }
+            else { arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)lastType.Cut(Requirements.All); }
+
             return arcadeMoney;
         }
-        static void EliminateNegatives<T>(IParamFunc<T, bool> chooser, List<int> indices, T[] values)
+
+
+
+        static void EliminateNegatives<T, TClass>(IParamFunc<T, Result> chooser, List<int> indices, (T, TClass)[] values, out int success)
         {
+            success = -1;
             for (int i = 0; i < indices.Count; i++)
             {
-                if (!chooser.Invoke(values[indices[i]]))
+                Result res = chooser.Invoke(values[indices[i]].Item1);
+                if (res == Result.Fail)
                 {
-                    indices.RemoveAt(i);
+                    indices.RemoveAt(i--);
+                }
+                else if (res == Result.Success)
+                {
+                    success = indices[i];
                 }
             }
         }
-        public static bool IsValidExpression(string lexim, char[] input, int end, int currLength) => lexim.Length <= currLength || lexim[currLength] != input[end];
-        public static bool IsSpecialExpression(Func<Yarn, bool, bool> tester, bool full, Yarn yarn) => tester(yarn, full);
+        public static Result IsValidExpression(string lexim, char[] input, int end, int currLength)
+        {
 
-        public static bool IsValidName(Yarn yarn, bool full)
+
+            if (lexim.Length <= currLength || lexim[currLength] != input[end]) return Result.Fail;
+            if (lexim.Length == currLength + 1) return Result.Success;
+            return Result.Nuetral;
+        }
+        //public static Result IsValidHex(Yarn yarn, bool full)
+        //{
+
+        //}
+        public static Result IsValidText(Yarn yarn, bool full)
+        {
+            foreach (var thread in yarn.Span) if (thread == '`' || thread == '\'' || thread == '\n' || thread == '\r') return Result.Fail;
+            return Result.Nuetral;
+        }
+
+        public static Result IsSpecialExpression(Func<Yarn, bool, Result> tester, bool full, Yarn yarn) => tester(yarn, full);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsNum(char cry) => cry >= '0' & cry <= '9';
+        static bool IsHexNum(char cry) => IsNum(cry) || (cry >= 'A' && cry <= 'F') || (cry >= 'a' && cry <= 'f');
+        static bool IsLetter(char cry) => (cry >= 'a' & cry <= 'z') || (cry >= 'A' & cry <= 'Z');
+        public static Result IsValidName(Yarn yarn, bool full)
         {
             var cry = yarn.Span;
-            if (full && (cry[0] < 'A' || cry[0] > 'z' || (cry[0] > 'Z' && cry[0] < 'a')) && cry[0] != '$' && cry[0] != '_' && cry[0] != '@' && cry[0] != ' ' && cry[0] != '\r' && cry[0] != '\n') return false;
+            if (full && !IsLetter(cry[0]) && cry[0] != '$' && cry[0] != '_' && cry[0] != '@') return Result.Fail;
 
-            for (int i = 0; i < cry.Length; i++) if ((cry[0] < 'A' || cry[0] > 'z' || (cry[0] > 'Z' && cry[0] < 'a') || (cry[0] < '0' && cry[0] > '9')) && cry[0] != '$' && cry[0] != '_' && cry[0] != '@' && cry[0] != ' ' && cry[0] != '\r' && cry[0] != '\n') return false;
+            for (int i = 0; i < cry.Length; i++) if (!IsLetter(cry[i]) && !IsNum(cry[i]) && cry[i] != '$' && cry[i] != '_' && cry[i] != '@') return Result.Fail;
 
-            return true;
+            return Result.Nuetral;
         }
-        public static bool IsValidNumber(Yarn yarn, bool full)
+        public static Result IsValidNumber(Yarn yarn, bool full)
         {
+            var cry = yarn.Span;
+            //if (full && !IsNum(cry[0]) && cry[0] != 'x' || (yarn.Length > 1 && cry[0] != 'b')) return Result.Fail;
 
+            foreach (var supaCry in cry) if (!IsNum(supaCry)) return Result.Fail;
+
+            return Result.Nuetral;
         }
         static void Main(string[] args)
         {
@@ -152,47 +316,40 @@ namespace SeinfeldTokenizer
                 (";", Classification.BeginLine),
                 ("->", Classification.DoStuff),
                 ("<-", Classification.SaveStuff),
-                ("''", Classification.OpenQuote),
-                ("``", Classification.CloseQuote),
-                ("//", Classification.Comment),
+                ("''", Classification.Text | Classification.RequirementAfter),
+                ("``", Classification.Text | Classification.RequirementBefore),
+                ("//", Classification.Comment | Classification.RequirementAfter | Classification.Impartial | Classification.WeakSauce),
                 ("^", Classification.BeginBody),
                 ("plzWhen", Classification.PlzWhen),
                 ("orJust", Classification.OrJust),
                 ("thanks", Classification.Thanks),
                 ("\n", Classification.WhiteSpace),
-                ("\r", Classification.WhiteSpace),
+                ("\r", Classification.WhiteSpace | Classification.RequirementBefore | Classification.Impartial),
                 (" ", Classification.WhiteSpace),
                 ("\t", Classification.WhiteSpace),
-                ("/->", Classification.CommentRegionBegin),
-                ("<-\\", Classification.CommentRegionEnd),
+                ("/->", Classification.Comment | Classification.RequirementAfter | Classification.Impartial),
+                ("<-\\", Classification.Comment | Classification.RequirementBefore),
                 ("¯\\_(", Classification.OpenShrug),
                 (")_/¯", Classification.CloseShrug),
                 ("™", Classification.FuncTM),
                 ("©", Classification.TypeC),
                 ("®", Classification.VariableR),
                 ("xXx", Classification.Multiply),
+                //("xlx", Classification.d),
                 ("x+x", Classification.Add),
-                ("/", Classification.Also)
+                ("/", Classification.Also),
+                ("'s", Classification.Ownership)
             };
             //enum Classification
-            //{
-            //    OpenShrug,
-            //    CloseShrug,
-            //    PlzWhen,
-            //    OrJust,
-            //    Thanks,
-            //    Comment,
-            //    CommentRegionBegin,
-            //    CommentRegionEnd,
-            //    Thingy,
-            //    Ownership,
-            //    Multiply,
-            //    Add,
-            //    FuncTM,
-            //    TypeC,
-            //    VariableR
-            //}
-            var cash = ATM(in input, values, Classification.Thingy, IsValidName);
+
+            var specialInputs = new (Func<Yarn, bool, Result> isValid, Classification specialType)[]
+            {
+                (IsValidName, Classification.Thingy),
+                (IsValidNumber, Classification.Number),
+                //(IsValidText, Classification.Text | Classification.RequirementAfter | Classification.RequirementBefore),
+                //(IsValidComment, Classification.Comment, Classification.RequirementBefore)
+            };
+            var cash = ATM(input, values, specialInputs, Classification.WhiteSpace);
         }
     }
 }

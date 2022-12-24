@@ -1,9 +1,17 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
-namespace BaseGameLibrary
+namespace SeinfeldTokenizer
 {
-    public partial class Extensions
+    public static partial class Extensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort Cut<TEnum, CoffeeEnum>(this TEnum me, CoffeeEnum other) where TEnum : Enum where CoffeeEnum : Enum
+            => (ushort)(Convert.ToUInt16(me) & ~Convert.ToUInt16(other));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool BetterHasFlag<TEnum, CoffeeEnum>(this TEnum me, CoffeeEnum other) where TEnum: Enum where CoffeeEnum : Enum
+            => (Convert.ToUInt16(me) | Convert.ToUInt16(other)) == Convert.ToUInt16(me);
+
         /// <summary>
         /// Shorthand for ParamAction constructor for readability purposes
         /// </summary>
