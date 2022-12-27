@@ -10,20 +10,16 @@ namespace SeinfeldTokenizer
 {
     class TerminalState<TClassification> : State<TClassification> where TClassification : Enum
     {
-        public override TerminalState<TClassification> Clone()
-        {
-            throw new NotImplementedException();
-        }
+        public override TerminalState<TClassification> Clone() => new TerminalState<TClassification>(value);
         public override bool Terminal => true;
         public TerminalState(TClassification value)
-            : base(null)
         {
             this.value = value;
 
             //children = new List<ParserNode<TClassification>>();
         }
+        private TerminalState() { }
         TClassification value { get; set; }
-        List<TerminalState<TClassification>> children;
     }
 
     abstract class State<TClassification> where TClassification : Enum
@@ -78,9 +74,26 @@ namespace SeinfeldTokenizer
     }
     internal class Parser : Cry
     {
-        public static TerminalState<TClassification> Parse<TClassification>(List<Token<TClassification>> tokens, MidState<TClassification> startState) where TClassification : Enum
+        public static TerminalState<TClassification> Parse<TClassification>(in List<Token<TClassification>> tokens, MidState<TClassification> startState) where TClassification : Enum
         {
+            return Compress(BuildTree(tokens, startState, 0));
 
+
+
+
+            static State<TClassification> BuildTree(List<Token<TClassification>> tokens, MidState<TClassification> currentState, int index)
+            {
+
+            }
+
+
+
+            static TerminalState<TClassification> Compress(State<TClassification> head)
+            {
+                throw new NotImplementedException();
+            }
         }
+        
+
     }
 }
