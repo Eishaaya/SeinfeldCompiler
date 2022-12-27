@@ -11,11 +11,19 @@ namespace SeinfeldTokenizer
         enum Classification : ushort
         {
             None,
-            DoStuff,
+
+
             SaveStuff,
             BeginLine,
             BeginBody,
             WhiteSpace,
+
+            FuncTM,
+            TypeC,
+            DataType,
+
+            DoStuff,
+
             OpenShrug,
             CloseShrug,
             PlzWhen,
@@ -28,9 +36,7 @@ namespace SeinfeldTokenizer
             Multiply,
             Add,
             Subtract,
-            FuncTM,
-            TypeC,
-            VariableR,
+
             Also,
             Number,
             Discard,
@@ -83,7 +89,7 @@ namespace SeinfeldTokenizer
             (string, Classification)[] values =
             {
                 (";", Classification.BeginLine),
-                ("->", Classification.DoStuff),
+                ("->", Classification.DoStuff | Classification.RequirementBefore | Classification.Impartial),
                 ("<-", Classification.SaveStuff),
                 ("''", Classification.Text | Classification.RequirementAfter),
                 ("``", Classification.Text | Classification.RequirementBefore),
@@ -102,7 +108,7 @@ namespace SeinfeldTokenizer
                 (")_/¯", Classification.CloseShrug),
                 ("™", Classification.FuncTM),
                 ("©", Classification.TypeC),
-                ("®", Classification.VariableR),
+                ("®", Classification.DataType | Classification.RequirementAfter),
                 ("xXx", Classification.Multiply),
                 ("x:-x", Classification.Divide),
                 ("x+*-1x", Classification.Subtract),

@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SeinfeldTokenizer", "SeinfeldTokenizer\SeinfeldTokenizer.csproj", "{E6280140-ADB2-45F1-9C79-70FC9EF27907}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SeinfeldTokenizer", "SeinfeldTokenizer\SeinfeldTokenizer.csproj", "{E6280140-ADB2-45F1-9C79-70FC9EF27907}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crynsole", "Crynsole\Crynsole.csproj", "{0B7AC73A-87E4-4658-ABBA-6855A46790B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{E6280140-ADB2-45F1-9C79-70FC9EF27907}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6280140-ADB2-45F1-9C79-70FC9EF27907}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E6280140-ADB2-45F1-9C79-70FC9EF27907}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B7AC73A-87E4-4658-ABBA-6855A46790B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B7AC73A-87E4-4658-ABBA-6855A46790B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B7AC73A-87E4-4658-ABBA-6855A46790B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B7AC73A-87E4-4658-ABBA-6855A46790B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
