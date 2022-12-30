@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SeinfeldTokenizer", "SeinfeldTokenizer\SeinfeldTokenizer.csproj", "{E6280140-ADB2-45F1-9C79-70FC9EF27907}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SeinfeldCompiler", "SeinfeldTokenizer\SeinfeldCompiler.csproj", "{E6280140-ADB2-45F1-9C79-70FC9EF27907}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crynsole", "Crynsole\Crynsole.csproj", "{0B7AC73A-87E4-4658-ABBA-6855A46790B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Crynsole", "Crynsole\Crynsole.csproj", "{0B7AC73A-87E4-4658-ABBA-6855A46790B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

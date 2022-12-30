@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-namespace SeinfeldTokenizer
+namespace SeinfeldCompiler
 {
     public static partial class Extensions
     {

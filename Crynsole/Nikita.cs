@@ -18,28 +18,36 @@ namespace Crynsole
 
     internal class Program
     {
-        static void eh<T>() where T : A
-        {
-            A bob = new A() + new A(); //cry
-            checked
-            {
-                int z = int.MaxValue + 1;
-            }
 
-            var a = 2 - "a";
-            int b = /*(garbage)(*/new trash();
-            a += 1;
-            int b = a.iowjrief;
-            5.ToString();
-            ExpandoObject a2 = new ExpandoObject();
-            a = "Nikita".ToString();
+        //static void eh<T>() where T : A
+        //{
+        //    int x = 0;
+        //    {
+        //        int x = 100;
+        //    }
 
-            int c = a.Length;
-            int x = () => 3;
-        }
+        //    A bob = new A() + new A(); //cry
+        //    checked
+        //    {
+        //        int z = int.MaxValue + 1;
+        //    }
+
+        //    var a = 2 - "a";
+        //    int b = /*(garbage)(*/new trash();
+        //    a += 1;
+        //    int b = a.iowjrief;
+        //    5.ToString();
+        //    ExpandoObject a2 = new ExpandoObject();
+        //    a = "Nikita".ToString();
+
+        //    int c = a.Length;
+        //    int x = () => 3;
+        //}
         static void Main(string[] args)
         {
-
+            bool a = false;
+            bool b = true;
+            bool c = a & b == b ^ a;
         }
     }
 }

@@ -1,99 +1,65 @@
-﻿using System;
+﻿global using static SeinfeldCompiler.Extensions;
+
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Diagnostics.Contracts;
+using System.Drawing;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SeinfeldTokenizer
+namespace SeinfeldCompiler
 {
-    class TerminalState<TClassification> : State<TClassification> where TClassification : Enum
-    {
-        public override TerminalState<TClassification> Clone() => new TerminalState<TClassification>(value);
-        public override bool Terminal => true;
-        public TerminalState(TClassification value)
-        {
-            this.value = value;
 
-            //children = new List<ParserNode<TClassification>>();
+    static partial class Extensions
+    {
+        public static void PrintColor(ConsoleColor color, string text)
+        {
+            Console.ForegroundColor = color;
+            Console.Write(text);
+            Console.ForegroundColor = ConsoleColor.White;
         }
-        private TerminalState() { }
-        TClassification value { get; set; }
+        public static void PrintColorLine(ConsoleColor color, string text)
+        {
+            Console.ForegroundColor = color;
+            Console.WriteLine(text);
+            Console.ForegroundColor = ConsoleColor.White;
+        }
     }
 
-    abstract class State<TClassification> where TClassification : Enum
-    {
-        public List<State<TClassification>> Children { get; protected set; }
-        public virtual bool Terminal => false;
-        public abstract State<TClassification> Clone();
-        protected State() { }
-        protected State(List<State<TClassification>> children) { Children = children; }
-
-    }
-
-    class MidState<TClassification> : State<TClassification> where TClassification : Enum
-    {
-        //    private protected TClassification[] requirements;
-        public ImmutableArray<State<TClassification>[]> Possibilities { get; private set; }
-        int childIndex = 0;
-
-        public override MidState<TClassification> Clone()
-        {
-            var temp = new MidState<TClassification>();
-            temp.Possibilities = Possibilities;
-            return temp;
-        }
-
-        public int ChildIndex
-        {
-            protected get => childIndex;
-            set
-            {
-                if (childIndex == value) return;
-
-                childIndex = value;
-                Children.Clear();
-                for (int i = 0; i < Possibilities[childIndex].Length; i++)
-                {
-                    Children.Add(Possibilities[childIndex][i].Clone());
-                }
-            }
-        }
-
-        public MidState(State<TClassification>[][] possibilities)
-            :base(new List<State<TClassification>>())
-        {
-            Possibilities = ImmutableArray.Create(possibilities);
-            
-        }
-#nullable disable
-        protected MidState() : base() { }
-#nullable enable
-
-    }
+    
     internal class Parser : Cry
     {
-        public static TerminalState<TClassification> Parse<TClassification>(in List<Token<TClassification>> tokens, MidState<TClassification> startState) where TClassification : Enum
+        public static List<State<TClassification>> Parse<TClassification>(in List<Token<TClassification>> tokens, in IEnumerable<TClassification> ignoredClassifications, StartState<TClassification> startState) where TClassification : Enum
         {
-            return Compress(BuildTree(tokens, startState, 0));
-
-
-
-
-            static State<TClassification> BuildTree(List<Token<TClassification>> tokens, MidState<TClassification> currentState, int index)
+            int index = 0;
+            int depth = 0;
+            if (startState.TryBuildTree(tokens, ignoredClassifications.ToHashSet(), ref index, out _, out _))
             {
+                Console.WriteLine("CST:");
+                startState.Print();
 
+                Console.WriteLine("AST:");
+
+                startState.Compress(ref depth, out _);
+                startState.Print();
+                return startState.Children;
             }
+            throw new PuertoRicoException("Parse failed :(");
 
 
+            //static TerminalState<TClassification> Compress(State<TClassification> head)
+            //{
+            //    //throw new NotImplementedException("Parse good, I am lazy though");
+            //    foreach (var child in head.Children)
+            //    {
 
-            static TerminalState<TClassification> Compress(State<TClassification> head)
-            {
-                throw new NotImplementedException();
-            }
+            //    }
+            //}
         }
-        
-
     }
 }

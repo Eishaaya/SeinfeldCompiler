@@ -1,6 +1,6 @@
 ﻿
 global using Yarn = System.ReadOnlyMemory<char>;
-global using static SeinfeldTokenizer.Extensions;
+global using static SeinfeldCompiler.Extensions;
 
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Dynamic;
 
-namespace SeinfeldTokenizer
+namespace SeinfeldCompiler
 {
 
 
@@ -86,67 +86,74 @@ namespace SeinfeldTokenizer
             possibleResults.CopyTo(originalResults);
             possibleResults.CopyTo(0, originalSpecials, 0, originalSpecials.Length);
             int currLength = 0;
+            int end;
 
             int success = -1;
-            // int prevSuccess;
-            for (int end = 0; end < input.Length; end++)
+            void AddToken(TClassification newType)
             {
-
-                void AddToken(TClassification newType)
+                void Reset()
                 {
-                    void Reset()
-                    {
-                        possibleResults = new List<int>(originalResults);
-                        success = -1;
-                        currLength = 0;
-                    }
-                    //var newToken = new Token<TClassification>(input, end, currLength, type);
+                    possibleResults = new List<int>(originalResults);
+                    success = -1;
+                    currLength = 0;
+                }
+                //var newToken = new Token<TClassification>(input, end, currLength, type);
 
 #nullable disable //cry
-                    TClassification oldType = arcadeMoney.Count > 0 ? arcadeMoney[arcadeMoney.Count - 1].Type : default;
+                TClassification oldType = arcadeMoney.Count > 0 ? arcadeMoney[arcadeMoney.Count - 1].Type : default;
 
-                    if (newType.BetterHasFlag(Requirements.Before))
+                if (newType.BetterHasFlag(Requirements.Before))
+                {
+                    ushort standardNew = newType.Cut(Requirements.Important);
+                    ushort standardClass = oldType.Cut(Requirements.Important);
+                    if (newType.BetterHasFlag(Requirements.Impartial) && (standardNew >= standardClass || !oldType.BetterHasFlag(Requirements.After)))
                     {
-                        ushort standardNew = newType.Cut(Requirements.Important);
-                        ushort standardClass = oldType.Cut(Requirements.Important);
-                        if (newType.BetterHasFlag(Requirements.Impartial) && (standardNew >= standardClass || !oldType.BetterHasFlag(Requirements.After)))
+                        if (arcadeMoney.Count > 0)
                         {
                             arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)standardClass;
-                            arcadeMoney.Add(new Token<TClassification>(input, end, currLength, (TClassification)(object)standardNew));
-                            Reset();
-                            return;
                         }
-                        if (!oldType.BetterHasFlag(Requirements.Impartial) || standardNew >= standardClass || oldType.BetterHasFlag(Requirements.WeakSauce))
+                        arcadeMoney.Add(new Token<TClassification>(input, end, currLength, (TClassification)(object)standardNew));
+                        Reset();
+                        return;
+                    }
+                    if (!oldType.BetterHasFlag(Requirements.Impartial) || standardNew >= standardClass || oldType.BetterHasFlag(Requirements.WeakSauce))
+                    {
+                        if (!newType.BetterHasFlag(Requirements.Impartial) && (!oldType.BetterHasFlag(Requirements.After) || standardClass != standardNew))
                         {
-                            if (!newType.BetterHasFlag(Requirements.Impartial) && (!oldType.BetterHasFlag(Requirements.After) || standardClass != standardNew))
-                            {
-                                arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)Requirements.Garbage;
-                                Console.WriteLine("Cannot close region that does not exist!");
-                            }
-                            else arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)((TClassification)(object)standardClass).Cut(Requirements.WeakSauce); //Stan Cry (Tears of joy)
+                            arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)Requirements.Garbage;
+                            Console.WriteLine("Cannot close region that does not exist!");
                         }
-                        //cry
-                        var oldInfo = arcadeMoney[arcadeMoney.Count - 1];
-                        arcadeMoney[arcadeMoney.Count - 1].Info = new Yarn(input, oldInfo.StartIndex, end - oldInfo.StartIndex + 1);
+                        else arcadeMoney[arcadeMoney.Count - 1].Type = (TClassification)(object)((TClassification)(object)standardClass).Cut(Requirements.WeakSauce); //Stan Cry (Tears of joy)
                     }
-                    //    neededPrev.HasFlag(Classification.RequirementBefore) && !arcadeMoney[arcadeMoney.Count - 1].Type.Equals(neededPrev)) throw new PuertoRicoException($"Failed to complete: End: {end}, Length: {currLength}");
-                    else if (oldType.BetterHasFlag(Requirements.After))
-                    {
-                        //if (oldType.Cut(Requirements.After) != newType.Cut(Requirements.Before)) throw new PuertoRicoException("Missing required info");
+                    //cry
+                    var oldInfo = arcadeMoney[arcadeMoney.Count - 1];
+                    arcadeMoney[arcadeMoney.Count - 1].Info = new Yarn(input, oldInfo.StartIndex, end - oldInfo.StartIndex + 1);
+                }
+                //    neededPrev.HasFlag(Classification.RequirementBefore) && !arcadeMoney[arcadeMoney.Count - 1].Type.Equals(neededPrev)) throw new PuertoRicoException($"Failed to complete: End: {end}, Length: {currLength}");
+                else if (oldType.BetterHasFlag(Requirements.After))
+                {
+                    //if (oldType.Cut(Requirements.After) != newType.Cut(Requirements.Before)) throw new PuertoRicoException("Missing required info");
 
-                        var oldInfo = arcadeMoney[arcadeMoney.Count - 1];
-                        arcadeMoney[arcadeMoney.Count - 1].Info = new Yarn(input, oldInfo.StartIndex, end - oldInfo.StartIndex + 1);
-                    }
-                    else
-                    {
-                        if (((Requirements)(object)newType).Equals(Requirements.Garbage)) Console.WriteLine("Garbage was added");
-                        arcadeMoney.Add(new Token<TClassification>(input, end, currLength, newType));
-                    }
+                    var oldInfo = arcadeMoney[arcadeMoney.Count - 1];
+                    arcadeMoney[arcadeMoney.Count - 1].Info = new Yarn(input, oldInfo.StartIndex, end - oldInfo.StartIndex + 1);
+                }
+                else
+                {
+                    if (((Requirements)(object)newType).Equals(Requirements.Garbage)) { Console.WriteLine("Garbage was added"); Console.BackgroundColor = ConsoleColor.DarkRed; }
+                    arcadeMoney.Add(new Token<TClassification>(input, end, currLength, newType));
+                }
 
-                    Reset();
+                Reset();
 
 #nullable enable
-                }
+            }
+            // int prevSuccess;
+            for (end = 0; end < input.Length; end++)
+            {
+                /// <summary>
+                /// TODO: cut duplicate checks, and clean this up
+                /// </summary>
+                
 
                 char curr = input[end];
                 expressionFunc.parameter3 = end;
@@ -161,7 +168,7 @@ namespace SeinfeldTokenizer
                 currLength++;
                 if (possibleResults.Count == 0)
                 {
-                    if (currLength > 1)
+                    if (currLength > 1 && success == -1)
                     { end--; currLength--; }
 
                     var tempYarn = new Yarn(input, end - currLength + 1, currLength);
@@ -193,7 +200,8 @@ namespace SeinfeldTokenizer
                     }
                     else if (success != -1)
                     {
-
+                        end--;
+                        currLength--;
                         // arcadeMoney.Add(new Token<TClassification>(new Yarn(input, end-- - currLength + 1, currLength - 1), in expressionClasses[success].type));
                         AddToken(expressionClasses[success].type);
                         //Catch keyword containment case
@@ -209,6 +217,27 @@ namespace SeinfeldTokenizer
                 success = newSuccess;// == -1 ? success : newSuccess;
             }
 
+            end--;
+            if (possibleResults.Count == 1 && expressionClasses[possibleResults[0]].text.Length == currLength)
+            {
+                AddToken(expressionClasses[possibleResults[0]].type);
+                //ADD SUPPORT FOR RANDOS
+            }
+            else if (currLength != 0)
+            {
+                possibleResults = new List<int>(originalSpecials);
+
+                var origLength = end - currLength;
+                specialFunc.parameter3 = new Yarn(input, end - currLength, currLength);
+                specialFunc.parameter2 = true;
+                EliminateNegatives(specialFunc, possibleResults, specialClassifications, out _);
+                specialFunc.parameter2 = false;
+              //  TClassification foundClass;
+                if (possibleResults.Count == 1)
+                {
+                    AddToken(specialClassifications[possibleResults[0]].specialType);
+                }
+            }
             var lastType = arcadeMoney[arcadeMoney.Count - 1].Type;
             if (lastType.BetterHasFlag(Requirements.After) && !lastType.BetterHasFlag(Requirements.WeakSauce) && lastType.CompareTo(endPriority) > 0)
             {
@@ -240,8 +269,6 @@ namespace SeinfeldTokenizer
         }
         public static Result IsValidExpression(string lexim, char[] input, int end, int currLength)
         {
-
-
             if (lexim.Length <= currLength || lexim[currLength] != input[end]) return Result.Fail;
             if (lexim.Length == currLength + 1) return Result.Success;
             return Result.Nuetral;

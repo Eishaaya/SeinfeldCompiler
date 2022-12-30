@@ -1,14 +1,25 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 
-namespace SeinfeldTokenizer
+namespace SeinfeldCompiler
 {
+    using Terminal = TerminalState<Program.Classification>;
+    using Mid = MidState<Program.Classification>;
+    using AbstractState = State<Program.Classification>;
     using static Extensions;
 
     using Yarn = ReadOnlyMemory<char>;
+
+    static partial class Extensions
+    {
+        internal static Terminal GetTerminal(this Program.Classification me) => new Terminal(me);
+    }
+
     internal class Program
     {
         [Flags]
-        enum Classification : ushort
+        internal enum Classification : ushort
         {
             None,
 
@@ -27,6 +38,7 @@ namespace SeinfeldTokenizer
             OpenShrug,
             CloseShrug,
             PlzWhen,
+            Loop,
             OrJust,
             Thanks,
 
@@ -36,6 +48,7 @@ namespace SeinfeldTokenizer
             Multiply,
             Add,
             Subtract,
+            IsSame,
 
             Also,
             Number,
@@ -82,9 +95,38 @@ namespace SeinfeldTokenizer
 
             return Result.Nuetral;
         }
+        static Mid NewMid(string name) => new Mid(name);
+        static Mid NewMid(string name, params AbstractState[] states)
+        {
+            var returner = new Mid(name) { Possibilities = new AbstractState[states.Length][] };
+            for (int i = -1; ++i < states.Length;)
+            {
+                returner.Possibilities[i] = new AbstractState[] { states[i] };
+            }
+            return returner;
+        }
         static void Main(string[] args)
         {
-            char[] input = File.ReadAllText("TestCode.txt").ToCharArray();
+            string sample = "TestCode.txt";
+            char[] input = File.ReadAllText(sample).ToCharArray();
+
+            FileInfo info = new FileInfo(sample);
+            var fileAge = (DateTime.Now - info.LastWriteTime).TotalMinutes;
+            if (fileAge <= .5)
+            {
+                Console.BackgroundColor = ConsoleColor.DarkGreen;
+            }
+            else if (fileAge >= 120)
+            {
+                Console.BackgroundColor = ConsoleColor.DarkBlue;
+            }
+            else
+            {
+                Console.BackgroundColor = ConsoleColor.Black;
+            }
+            Console.Clear();
+
+            #region tokenSetup
 
             (string, Classification)[] values =
             {
@@ -109,14 +151,16 @@ namespace SeinfeldTokenizer
                 ("™", Classification.FuncTM),
                 ("©", Classification.TypeC),
                 ("®", Classification.DataType | Classification.RequirementAfter),
-                ("xXx", Classification.Multiply),
-                ("x:-x", Classification.Divide),
-                ("x+*-1x", Classification.Subtract),
+                ("#X#", Classification.Multiply),
+                ("#:-#", Classification.Divide),
+                ("#+*-1#", Classification.Subtract),
                 //("xlx", Classification.d),
-                ("x+x", Classification.Add),
+                ("#+#", Classification.Add),
                 ("/", Classification.Also),
                 ("'s", Classification.Ownership),
                 ("_", Classification.Discard),
+                ("???", Classification.IsSame),
+                ("(╯°□°)╯︵ ┻━┻", Classification.Loop),
             };
             //enum Classification
 
@@ -127,7 +171,111 @@ namespace SeinfeldTokenizer
                 //(IsValidText, Classification.Text | Classification.RequirementAfter | Classification.RequirementBefore),
                 //(IsValidComment, Classification.Comment, Classification.RequirementBefore)
             };
+            #endregion
             var cash = Tokenizer.ATM(input, values, specialInputs, Classification.WhiteSpace);
+
+            //  var whiteState = new Terminal(Classification.WhiteSpace);
+            var beginlnState = new Terminal(Classification.BeginLine);
+            var IDstate = new Terminal(Classification.Thingy);
+            var NumberState = new Terminal(Classification.Number);
+            var addState = new Terminal(Classification.Add);
+            var multiplyState = new Terminal(Classification.Multiply);
+            var subtractState = new Terminal(Classification.Subtract);
+            var divideState = new Terminal(Classification.Divide);
+            var saveStuffArrow = Classification.SaveStuff.GetTerminal();
+            var typeState = Classification.DataType.GetTerminal();
+            Terminal doStuffArrow = Classification.DoStuff;
+            Terminal thanksState = Classification.Thanks;
+            Terminal orJustState = Classification.OrJust;
+            Terminal plzWhenState = Classification.PlzWhen;
+            Terminal textState = Classification.Text;
+            Terminal checkEquality = Classification.IsSame;
+            Terminal tableFlipState = Classification.Loop;
+            Terminal leftShrug = Classification.OpenShrug;
+            Terminal rightShrug = Classification.CloseShrug;
+
+            var expressionState = NewMid("expression");
+            var valueState = NewMid("value");
+            var lowPriorityMath = NewMid("lowMath");
+            var midPriorityMath = NewMid("midMath");
+            var highPriorityMath = NewMid("HighMath");
+            var lineState = NewMid("line");
+            var setState = NewMid("setting");
+            var startingState = new StartState<Classification>(lineState, new HashSet<Classification>());
+            var bodyState = new StartState<Classification>(lineState, new HashSet<Classification>() { Classification.Thanks, Classification.OrJust });
+            var conditionalEnding = NewMid("conditionalEnd");
+            var body = NewMid("body");
+            var midMathSymbol = NewMid("highSymbol", multiplyState, divideState);
+            var lowMathSymbol = NewMid("lowSymbol", addState, subtractState);
+            var creationTailState = NewMid("creationTail", setState, IDstate);
+            var blank = new Mid("blank") { Possibilities = new AbstractState[][] { new AbstractState[0] } };
+            var lowMathHelper = NewMid("lowHelper");
+            var highMathHelper = NewMid("highHelper");
+            var conditional = NewMid("conditional", tableFlipState, plzWhenState);
+                       
+            lowPriorityMath.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] { midPriorityMath, lowMathHelper },
+            };
+            lowMathHelper.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] {lowMathSymbol, lowPriorityMath},
+                new AbstractState[] { blank }
+            };
+            var midMathHelper = NewMid("midHelper");
+            midMathHelper.Possibilities = new AbstractState[][]
+            {
+                 new AbstractState[] { midMathSymbol, midPriorityMath},
+                new AbstractState[] { blank }
+            };
+            midPriorityMath.Possibilities = new AbstractState[][]
+            {
+               new AbstractState[] { highPriorityMath, midMathHelper}
+            };
+            highPriorityMath.Possibilities = new AbstractState[][] { new AbstractState[] { valueState, highMathHelper } };
+            highMathHelper.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] { checkEquality, highPriorityMath},
+                new AbstractState[] { blank }
+            };
+
+
+            conditionalEnding.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] { thanksState },
+                new AbstractState[] { orJustState, body }
+            };
+            body.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] { bodyState, conditionalEnding }
+            };
+            lineState.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] { beginlnState, typeState, doStuffArrow, creationTailState },
+                new AbstractState[] { beginlnState, setState },
+                new AbstractState[] { conditional, doStuffArrow, expressionState, body}
+            };
+            setState.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] { IDstate, saveStuffArrow, expressionState}
+            };
+            expressionState.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] { lowPriorityMath },
+                //  new AbstractState[] { valueState }
+            };
+            valueState.Possibilities = new AbstractState[][]
+            {
+                new AbstractState[] { leftShrug, expressionState, rightShrug },
+                new AbstractState[] { setState },
+                new AbstractState[] { IDstate },
+                new AbstractState[] { NumberState },
+                new AbstractState[] { textState },
+               // new AbstractState[] { leftShrug, expressionState, rightShrug }
+            };
+
+
+            Parser.Parse(cash, new Classification[] { Classification.WhiteSpace, Classification.Comment }, startingState);
         }
     }
 }
